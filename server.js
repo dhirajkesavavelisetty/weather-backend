@@ -20,9 +20,8 @@ app.get("/weather/:city", async (req, res) => {
         const response= await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1`);
 
         const data=await response.json();
-        if(!data.results){
-            res.status(404).json({ error: "City not found" });
-            return;
+        if (!data.results || data.results.length === 0) {
+            return res.status(404).json({ error: "City not found" });
         }
 
         const latitude = data.results[0].latitude;
@@ -40,7 +39,9 @@ app.get("/weather/:city", async (req, res) => {
     }
 });
 
-app.listen(5001, () => {
-    console.log("Server is running on port 5001");
+const PORT = process.env.PORT || 5001;
+
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
 
