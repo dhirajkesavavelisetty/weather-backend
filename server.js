@@ -13,6 +13,11 @@ app.use(cors());
     });
 });
 */
+app.get("/", (req, res) => {
+
+    res.send("Backend is working");
+
+});
 
 app.get("/weather/:city", async (req, res) => {
     try{
