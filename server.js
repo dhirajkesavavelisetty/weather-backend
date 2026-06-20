@@ -32,12 +32,15 @@ app.get("/weather/:city", async (req, res) => {
         const latitude = data.results[0].latitude;
         const longitude = data.results[0].longitude;
 
-        const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m`);
+        const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code`);
         
         const weatherData = await weatherResponse.json();
         res.json({
             city,
             temperature: weatherData.current.temperature_2m,
+            humidity: weatherData.current.relative_humidity_2m,
+            windSpeed: weatherData.current.wind_speed_10m,
+            weatherCode: weatherData.current.weather_code,
         });
     } catch (error) {
         res.status(500).json({ error: "Failed to fetch weather data" });
