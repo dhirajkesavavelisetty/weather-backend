@@ -35,8 +35,10 @@ app.get("/weather/:city", async (req, res) => {
         const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code`);
         
         const weatherData = await weatherResponse.json();
+        const cityName = data.results[0].name;
+
         res.json({
-            city,
+            city: cityName,
             temperature: weatherData.current.temperature_2m,
             humidity: weatherData.current.relative_humidity_2m,
             windSpeed: weatherData.current.wind_speed_10m,
