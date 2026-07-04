@@ -17,6 +17,7 @@ app.get("/", (req, res) => {
   res.send("Backend is working");
 });
 
+/*
 app.get("/search", async (req, res) => {
   try {
     const city = req.query.city;
@@ -88,6 +89,8 @@ app.get("/weather/coordinates", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch weather data" });
   }
 });
+
+*/
 
 app.get("/weather/:city", async (req, res) => {
   try {
