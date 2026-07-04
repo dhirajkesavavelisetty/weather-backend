@@ -53,11 +53,10 @@ GET /weather/delhi
 
 ## Live API
 
-https://weather-backend-3y11.onrender.com
+https://weather-backend-5svh.onrender.com
 
 Example:
-
-https://weather-backend-3y11.onrender.com/weather/delhi
+https://weather-backend-5svh.onrender.com/weather/delhi
 
 ## Frontend Repository
 
