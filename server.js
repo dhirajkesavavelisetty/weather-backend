@@ -95,11 +95,20 @@ app.get("/weather/coordinates", async (req, res) => {
 app.get("/weather/:city", async (req, res) => {
   try {
     const city = req.params.city;
+    console.log("Requested city:", city);
     const response = await fetch(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1`,
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`,
     );
 
     const data = await response.json();
+    console.log("Geocoding response:", data);
+
+    if (data.error) {
+      return res.status(400).json({
+        error: data.reason || "Geocoding API error",
+      });
+    }
+
     if (!data.results || data.results.length === 0) {
       return res.status(404).json({ error: "City not found" });
     }
@@ -112,6 +121,19 @@ app.get("/weather/:city", async (req, res) => {
     );
 
     const weatherData = await weatherResponse.json();
+    console.log("Weather response:", weatherData);
+
+    if (weatherData.error) {
+      return res.status(400).json({
+        error: weatherData.reason || "Weather API error",
+      });
+    }
+
+    if (!weatherData.current) {
+      return res.status(404).json({
+        error: "Current weather data unavailable",
+      });
+    }
     const cityName = data.results[0].name;
 
     res.json({
@@ -122,7 +144,10 @@ app.get("/weather/:city", async (req, res) => {
       weatherCode: weatherData.current.weather_code,
     });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch weather data" });
+    console.error("Weather route error:", error);
+    res.status(500).json({
+      error: error.message || "Failed to fetch weather data",
+    });
   }
 });
 
