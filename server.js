@@ -4,48 +4,49 @@ const cors = require("cors");
 const app = express();
 app.use(cors());
 
-/* app.get("/weather/:city", (req, res) => {
-    const city = req.params.city;
-    res.json({
-        city,
-        temperature: 32,
-        condition: "Sunny"
-    });
-});
-*/
+const WEATHER_API_KEY = "c302aae87eea4c809c7135442260707";
+
 app.get("/", (req, res) => {
   res.send("Backend is working");
 });
 
-
 app.get("/search", async (req, res) => {
   try {
     const city = req.query.city;
+
     if (!city) {
       return res.json([]);
     }
 
+    if (!WEATHER_API_KEY) {
+      return res.status(500).json({ error: "Weather API key is missing" });
+    }
+
     const response = await fetch(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=10`,
+      `https://api.weatherapi.com/v1/search.json?key=${WEATHER_API_KEY}&q=${encodeURIComponent(city)}`,
     );
 
     const data = await response.json();
-    if (!data.results) {
-      return res.json([]);
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: data.error?.message || "Failed to fetch city suggestions",
+      });
     }
 
-    const suggestions = data.results.map((place) => ({
+    const suggestions = data.map((place) => ({
       id: place.id,
       name: place.name,
       country: place.country,
-      state: place.admin1,
-      latitude: place.latitude,
-      longitude: place.longitude,
-      population: place.population,
+      state: place.region,
+      latitude: place.lat,
+      longitude: place.lon,
+      population: undefined,
     }));
 
     res.json(suggestions);
   } catch (error) {
+    console.error("Search route error:", error);
     res.status(500).json({ error: "Failed to fetch city suggestions" });
   }
 });
@@ -60,94 +61,65 @@ app.get("/weather/coordinates", async (req, res) => {
         .json({ error: "Latitude and longitude are required" });
     }
 
-    const weatherResponse = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code`,
-    );
-
-    const weatherData = await weatherResponse.json();
-
-    if (weatherData.error) {
-      return res.status(400).json({
-        error: weatherData.reason,
-      });
+    if (!WEATHER_API_KEY) {
+      return res.status(500).json({ error: "Weather API key is missing" });
     }
 
-    if (!weatherData.current) {
-      return res.status(404).json({
-        error: "Current weather data unavailable",
+    const response = await fetch(
+      `https://api.weatherapi.com/v1/current.json?key=${WEATHER_API_KEY}&q=${latitude},${longitude}&aqi=no`,
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: data.error?.message || "Failed to fetch weather data",
       });
     }
 
     res.json({
-      city: country ? `${name}, ${country}` : name,
-      temperature: weatherData.current.temperature_2m,
-      humidity: weatherData.current.relative_humidity_2m,
-      windSpeed: weatherData.current.wind_speed_10m,
-      weatherCode: weatherData.current.weather_code,
+      city: country ? `${name}, ${country}` : data.location.name,
+      temperature: data.current.temp_c,
+      humidity: data.current.humidity,
+      windSpeed: data.current.wind_kph,
+      weatherCode: data.current.condition.code,
     });
   } catch (error) {
+    console.error("Coordinates weather route error:", error);
     res.status(500).json({ error: "Failed to fetch weather data" });
   }
 });
 
-
-
 app.get("/weather/:city", async (req, res) => {
   try {
     const city = req.params.city;
-    console.log("Requested city:", city);
+
+    if (!WEATHER_API_KEY) {
+      return res.status(500).json({ error: "Weather API key is missing" });
+    }
+
     const response = await fetch(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`,
+      `https://api.weatherapi.com/v1/current.json?key=${WEATHER_API_KEY}&q=${encodeURIComponent(city)}&aqi=no`,
     );
 
     const data = await response.json();
-    console.log("Geocoding response:", data);
 
-    if (data.error) {
-      return res.status(400).json({
-        error: data.reason || "Geocoding API error",
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: data.error?.message || "Failed to fetch weather data",
       });
     }
-
-    if (!data.results || data.results.length === 0) {
-      return res.status(404).json({ error: "City not found" });
-    }
-
-    const latitude = data.results[0].latitude;
-    const longitude = data.results[0].longitude;
-
-    const weatherResponse = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code`,
-    );
-
-    const weatherData = await weatherResponse.json();
-    console.log("Weather response:", weatherData);
-
-    if (weatherData.error) {
-      return res.status(400).json({
-        error: weatherData.reason || "Weather API error",
-      });
-    }
-
-    if (!weatherData.current) {
-      return res.status(404).json({
-        error: "Current weather data unavailable",
-      });
-    }
-    const cityName = data.results[0].name;
 
     res.json({
-      city: cityName,
-      temperature: weatherData.current.temperature_2m,
-      humidity: weatherData.current.relative_humidity_2m,
-      windSpeed: weatherData.current.wind_speed_10m,
-      weatherCode: weatherData.current.weather_code,
+      city: data.location.name,
+      temperature: data.current.temp_c,
+      humidity: data.current.humidity,
+      windSpeed: data.current.wind_kph,
+      weatherCode: data.current.condition.code,
     });
   } catch (error) {
-    console.error("Weather route error:", error);
-    res.status(500).json({
-      error: error.message || "Failed to fetch weather data",
-    });
+    console.error("City weather route error:", error);
+    res.status(500).json({ error: "Failed to fetch weather data" });
   }
 });
 
